@@ -27,11 +27,11 @@
 		
 	}
 	
-	var Wiretap = function (object, name, reset) {
+	var Wiretap = function (object, name, cleanup) {
 	
 		this.object = object;
 		this.name = name || "[Object]";
-		this.reset = reset || null;
+		this.cleanup = cleanup || null;
 		
 		this.queue = [];
 		
@@ -112,9 +112,9 @@
 			return output.join("\n");
 		},
 		
-		reset: function () {
+		cleanup: function () {
 		
-			if (this.reset) {
+			if (this.cleanup) {
 				this.reset();
 			}
 				
@@ -125,14 +125,14 @@
 	};
 	
 
-	return function (object, name, reset) {
+	return function (object, name, cleanup) {
 	
 		if (typeof name === "function") {
-			reset = name;
+			cleanup = name;
 			name = null;
 		}
 	
-		return new Wiretap(object, name, reset);
+		return new Wiretap(object, name, cleanup);
 		
 	};
 
