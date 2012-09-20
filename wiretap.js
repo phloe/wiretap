@@ -14,7 +14,7 @@
 	
 		return function () {
 			
-			wiretap.queue.push({
+			wiretap.tapes[wiretap.label].push({
 				name: name,
 				arguments: arguments
 			});
@@ -31,9 +31,15 @@
 	
 		this.object = object;
 		this.name = name || "[Object]";
-		this.cleanup = cleanup || null;
+		this.cleanup = cleanup || function () {
+			return this;
+		};
+			
+		this.label = 0;
 		
-		this.queue = [];
+		this.tapes = {
+			0: []
+		};
 		
 		this.methods = {};
 		this.wrapped = {};
@@ -49,7 +55,16 @@
 	
 	Wiretap.prototype = {
 		
-		record: function record (label) {
+		record: function (label) {
+	
+			label = label || 0;
+	
+			if (label) {
+				this.label = label;
+				if (!(label in this.tapes)) {
+					this.tapes[label] = [];
+				}
+			}
 	
 			for (var name in this.methods) {
 				this.object[name] = this.wrapped[name];
@@ -59,7 +74,7 @@
 			
 		},
 		
-		stop: function stop () {
+		stop: function (label) {
 	
 			for (var name in this.methods) {
 				if (this.object.hasOwnProperty(name)) {
@@ -70,18 +85,22 @@
 				}
 			}
 			
+			this.label = 0;
+			
 			return this;
 			
 		},
 		
-		play: function () {
+		play: function (label) {
+	
+			label = label || 0;
 	
 			var item,
 				i = 0,
-				l = this.queue.length;
+				l = this.tapes[label].length;
 				
 			for (; i < l; i++) {
-				item = this.queue[i];
+				item = this.tapes[label][i];
 				this.methods[item.name].apply(this.object, item.arguments);
 			}
 			
@@ -89,37 +108,37 @@
 			
 		},
 		
-		erase: function () {
+		erase: function (label) {
 			
-			this.queue = [];
+			label = label || 0;
+			
+			this.tapes[label] = [];
 			
 			return this;
 			
 		},
 		
-		transcribe: function transcribe () {
+		transcribe: function (label) {
+			
+			label = label || 0;
 		
 			var item,
+				args,
 				i = 0,
-				l = this.queue.length,
+				l = this.tapes[label].length,
+				j, k,
 				output = [];
 				
 			for (; i < l; i++) {
-				item = this.queue[i];
-				output.push(this.name + "." + item.name + "(" + Array.prototype.join.call(item.arguments, ", ") + ")");
+				item = this.tapes[label][i];
+				args = Array.prototype.slice.call(item.arguments);
+				for (j = 0, k = args.length; j < k; j++) {
+					args[j] = JSON.stringify(args[j]);
+				}
+				output.push(this.name + "." + item.name + "(" + args.join(", ") + ")");
 			}
 		
 			return output.join("\n");
-		},
-		
-		cleanup: function () {
-		
-			if (this.cleanup) {
-				this.reset();
-			}
-				
-			return this;
-			
 		}
 		
 	};
